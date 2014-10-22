@@ -2,7 +2,10 @@ ng-sails
 ========
 **ng-sails** is a simple module for AngularJS that just binds your local `$scope` model to a sailsjs model.
 
-Include `ng-sails.js` file into your project and don't forget to add the `ngSails` module to your modules dependencies.
+Installation
+------------
+
+Include `ng-sails.js` (or `bower install ng-sails`) file into your project and don't forget to add the `ngSails` module to your modules dependencies.
 
 In your controller, require `$sails` and then bind the models together like so:
 
@@ -24,4 +27,4 @@ A quick and easy way to enable pagination is to modify the `params` object of th
 
 Maintainer
 ----------
-Ash Taylor, [ashley.taylor@sungard.com](ashley.taylor@sungard.com)
+Ash Taylor, [ashley.taylor@sungard.com](mailto:ashley.taylor@sungard.com)
