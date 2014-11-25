@@ -1,0 +1,23 @@
+{
+  "name": "ng-sails",
+  "version": "0.1.0",
+  "description": "Bind a sails model to an Angular model with full CRUD support",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zivc/ng-sails.git"
+  },
+  "keywords": [
+    "sailsjs",
+    "angularjs",
+    "sails",
+    "angular",
+    "socket",
+    "socket.io"
+  ],
+  "author": "Ash @zivcjs <a@zi.vc> (http://zi.vc/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zivc/ng-sails/issues"
+  },
+  "homepage": "https://github.com/zivc/ng-sails"
+}

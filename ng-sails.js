@@ -50,6 +50,7 @@ angular.module('ngSails', []).factory('$sails', ['$q',
 		$sails.prototype.crud = function(method, object, id) {
 			var q = $q.defer();
 			object = object || {};
+			method = (typeof method == "string" ? method : 'get').toLowerCase();
 			io.socket[method](this.prefix+this.model+(id ? '/'+id : ''), object, function(data,response) {
 				var verb = false;
 				switch (method) {
