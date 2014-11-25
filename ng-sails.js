@@ -47,6 +47,32 @@ angular.module('ngSails', []).factory('$sails', ['$q',
 			return this;
 		};
 
+		$sails.prototype.crud = function(method, object, id) {
+			var q = $q.defer();
+			object = object || {};
+			io.socket[method](this.prefix+this.model+(id ? '/'+id : ''), object, function(data,response) {
+				var verb = false;
+				switch (method) {
+					case "post":
+						verb = "created";
+						break;
+					case "put":
+						verb = "updated";
+						break;
+					case "delete":
+						verb = "destroyed"
+						break;
+				}
+				if (verb) this.responseHandler({verb:verb, id:data.id, data:data});
+				if (response.status == 200) {
+					q.resolve(data);
+				} else {
+					q.reject(data);
+				}
+			}.bind(this));
+			return q.promise;
+		}
+
 		$sails.prototype.hardFetch = function(subscribe) {
 			io.socket.request(this.prefix+this.model, this.params, function(response) {
 				response.reverse();
@@ -63,54 +89,19 @@ angular.module('ngSails', []).factory('$sails', ['$q',
 		};
 
 		$sails.prototype.create = function(object) {
-			var q = $q.defer();
-			io.socket.post(this.prefix+this.model, object, function(data,response) {
-				this.responseHandler({verb:"created", id:data.id, data:data});
-				if (response.status == 200) {
-					q.resolve(data);
-				} else {
-					q.reject(data);
-				}
-			}.bind(this));
-			return q.promise;
+			return this.crud('post', object);
 		};
 
 		$sails.prototype.update = function(id, object) {
-			var q = $q.defer();
-			io.socket.put(this.prefix+this.model+'/'+id, object, function(data,response) {
-				this.responseHandler({verb:"updated", id:id, data:response.data});
-				if (response.status == 200) {
-					q.resolve(data);
-				} else {
-					q.reject(data);
-				}
-			}.bind(this));
-			return q.promise;
+			return this.crud('put', object, id);
 		};
 
 		$sails.prototype.destroy = function(id, object) {
-			var q = $q.defer();
-			io.socket.delete(this.prefix+this.model+'/'+id, object, function(data,response) {
-				this.responseHandler({verb:"destroyed", id:id});
-				if (response.status == 200) {
-					q.resolve(data);
-				} else {
-					q.reject(data);
-				}
-			}.bind(this));
-			return q.promise;
+			return this.crud('delete', object, id);
 		};
 
 		$sails.prototype.retrieve = function(id, object) {
-			var q = $q.defer();
-			io.socket.get(this.prefix+this.model+'/'+id, object, function(data,response) {
-				if (response.status == 200) {
-					q.resolve(data);
-				} else {
-					q.reject(data);
-				}
-			}.bind(this));
-			return q.promise;
+			return this.crud('get', object, id);
 		};
 		return $sails;
 	}
