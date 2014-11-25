@@ -1,7 +1,7 @@
 angular.module('ngSails', []).factory('$sails', ['$q',
 	function($q) {
 		var $sails = function(model, scope, params, prefix) {
-			if (!io) throw "Can't see socket.io in the global scope?";
+			if (!io) throw "Can't see socket.io in the global scope? Did you include sails.io.js?";
 			this.prefix = '/'+prefix+'/' || '/';
 			this.model = model || '';
 			this.scope = scope || {};
