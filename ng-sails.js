@@ -76,6 +76,7 @@ angular.module('ngSails', []).factory('$sails', ['$q',
 
 		$sails.prototype.hardFetch = function(subscribe) {
 			io.socket.request(this.prefix+this.model, this.params, function(response) {
+				if (response.statusCode != "200") return;
 				response.reverse();
 				this.scope[this.model].data = response;
 				if (subscribe) this.subscribe();
