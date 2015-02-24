@@ -1,109 +1,97 @@
-angular.module('ngSails', []).factory('$sails', ['$q',
-	function($q) {
-		var $sails = function(model, scope, params, prefix) {
-			if (!io) throw "Can't see socket.io in the global scope? Did you include sails.io.js?";
-			this.prefix = '/'+prefix+'/' || '/';
-			this.model = model || '';
-			this.scope = scope || {};
-			this.params = {
+angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
+	function($q,$rootScope) {
+		var $sails = function(sailsmodel, angularmodel, $scope) {
+			if (!$scope) {
+				$scope = angularmodel;
+				angularmodel = sailsmodel;
+			}
+			if (typeof $scope[angularmodel] == "undefined") {
+				var init = function(sailsmodel, angularmodel, $scope) {
+					$scope[angularmodel] = [];
+					$scope[angularmodel] = new $sails(sailsmodel,angularmodel,$scope);
+				}
+				return init(sailsmodel, angularmodel, $scope);
+			}
+			$sails.prototype.api = sailsmodel;
+			$sails.prototype.model = angularmodel;
+			$sails.prototype.params = {
 				limit:30,
 				skip:0,
 				sort:'id desc'
-			}
-			if (params) angular.extend(this.params,params);
-			this.data = {};
-			this.hardFetch(true);
+			};
+			$sails.prototype.scope = $scope;
+			$sails.prototype.fetch(true);
+			return this;
 		};
-
 		$sails.prototype.responseHandler = function(response) {
-			switch (response.verb) {
+			this.scope[this.model] = this.scope[this.model] || [];
+			switch(response.verb) {
 				case "created":
-					if (this.params.sort === "id desc" && this.params.skip === 0) {
-						this.scope[this.model].data.unshift(response.data);
-						if (this.scope[this.model].data.length > ~~this.params.limit) {
-							this.scope[this.model].data = this.scope[this.model].slice(0,Math.max(this.params.limit,0));
-						}
+					if (this.params.sort === 'id desc' && this.params.skip === 0) {
+						this.scope[this.model].unshift(response.data);
+						if (this.scope[this.model].length > ~~this.params.limit) this.scope[this.model] = this.scope[this.model].slice(0,Math.max(this.params.limit,0));
 					}
 					break;
+
 				case "updated":
-					this.scope[this.model].data.forEach(function(object) {
-						if (object.id == response.id) {
-							angular.extend(object,response.data);
-						}
+					this.scope[this.model].forEach(function(item) {
+						if (item.id == response.id) angular.extend(item,response.data);
 					}.bind(this));
 					break;
+
 				case "destroyed":
-					var update = false;
-					this.scope[this.model].data.forEach(function(object,key) {
-						if (object.id == response.id) {
-							this.scope[this.model].data.splice(key,1);
-							update = true;
-						}
+					var performFetch = false;
+					this.scope[this.model].forEach(function(item,key) {
+						if (item.id == response.id) performFetch = true;
 					}.bind(this));
-					if (update) this.hardFetch();
+					if (performFetch) this.fetch(false);
 					break;
 			}
 			this.scope.$apply();
 			return this;
 		};
-
-		$sails.prototype.crud = function(method, object, id) {
-			var q = $q.defer();
-			object = object || {};
-			method = (typeof method == "string" ? method : 'get').toLowerCase();
-			io.socket[method](this.prefix+this.model+(id ? '/'+id : ''), object, function(data,response) {
-				var verb = false;
-				switch (method) {
-					case "post":
-						verb = "created";
-						break;
-					case "put":
-						verb = "updated";
-						break;
-					case "delete":
-						verb = "destroyed"
-						break;
-				}
-				if (verb) this.responseHandler({verb:verb, id:data.id, data:data});
-				if (response.status == 200) {
-					q.resolve(data);
-				} else {
-					q.reject(data);
-				}
-			}.bind(this));
-			return q.promise;
-		}
-
-		$sails.prototype.hardFetch = function(subscribe) {
-			io.socket.request(this.prefix+this.model, this.params, function(response) {
-				response.reverse();
-				this.scope[this.model].data = response;
-				if (subscribe) this.subscribe();
-				this.scope.$apply();
-			}.bind(this));
+		$sails.prototype.fetch = function(subscribe) {
+			io.socket.request((this.api.substr(0,1)!=="/"?'/':'')+this.api, this.params, function(response) {
+				$sails.prototype.scope[$sails.prototype.model] = response;
+				$sails.prototype.scope.$apply();
+				if (subscribe) $sails.prototype.subscribe();
+			});
 			return this;
 		};
-
 		$sails.prototype.subscribe = function() {
 			io.socket.on(this.model, this.responseHandler.bind(this));
 			return this;
+		}
+		$sails.prototype.where = function(where) {
+			return this;
 		};
-
-		$sails.prototype.create = function(object) {
-			return this.crud('post', object);
+		$sails.prototype.crud = function(method, object, id) {
+			var q = $q.defer(),
+				object = object || {},
+				method = (typeof method === "string"?method:"get").toLowerCase();
+				io.socket[method](this.api+(id?'/'+id:''),object,function(data,response) {
+					var verb = false;
+					switch (method) {
+						case "post":
+							verb = "created";
+							break;
+						case "put":
+							verb = "updated";
+							break;
+						case "delete":
+							verb = "destroyed";
+							break;
+					}
+					if (verb) this.responseHandler({verb:verb, id:data.id, data:data});
+					if (response.status == 200) return q.resolve(data);
+					q.reject(data);
+				}.bind(this));
+			return q.promise;
 		};
-
-		$sails.prototype.update = function(id, object) {
-			return this.crud('put', object, id);
-		};
-
-		$sails.prototype.destroy = function(id, object) {
-			return this.crud('delete', object, id);
-		};
-
-		$sails.prototype.retrieve = function(id, object) {
-			return this.crud('get', object, id);
-		};
+		$sails.prototype.create = function(object) { return this.crud('post', object); };
+		$sails.prototype.update = function(object) { return this.crud('put', object); };
+		$sails.prototype.destroy = function(object) { return this.crud('delete', object); };
+		$sails.prototype.retrieve = function(object) { return this.crud('get', object); };
 		return $sails;
-	}
+	};
 ]);
