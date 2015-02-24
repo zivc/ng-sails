@@ -12,15 +12,19 @@ angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 				}
 				return init(sailsmodel, angularmodel, $scope);
 			}
-			$sails.prototype.api = sailsmodel;
-			$sails.prototype.model = angularmodel;
-			$sails.prototype.params = {
+			this.api = sailsmodel;
+			this.model = angularmodel;
+			this.hooks = {
+				onfetch:[],
+				onsubscribe:[]
+			};
+			this.params = {
 				limit:30,
 				skip:0,
 				sort:'id desc'
 			};
-			$sails.prototype.scope = $scope;
-			$sails.prototype.fetch(true);
+			this.scope = $scope;
+			this.fetch(true);
 			return this;
 		};
 		$sails.prototype.responseHandler = function(response) {
@@ -52,17 +56,21 @@ angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 		};
 		$sails.prototype.fetch = function(subscribe) {
 			io.socket.request((this.api.substr(0,1)!=="/"?'/':'')+this.api, this.params, function(response) {
-				$sails.prototype.scope[$sails.prototype.model] = response;
-				$sails.prototype.scope.$apply();
-				if (subscribe) $sails.prototype.subscribe();
-			});
+				this.scope[this.model] = response;
+				this.scope.$apply();
+				if (subscribe) this.subscribe();
+				this.hooks.onfetch.forEach(function(hook) { hook(); });
+			}.bind(this));
 			return this;
 		};
 		$sails.prototype.subscribe = function() {
 			io.socket.on(this.model, this.responseHandler.bind(this));
+			this.hooks.onsubscribe.forEach(function(hook) { hook(); });
 			return this;
 		}
 		$sails.prototype.where = function(where) {
+			this.params.where = where?where:{};
+			this.fetch(false);
 			return this;
 		};
 		$sails.prototype.crud = function(method, object, id) {
@@ -93,5 +101,5 @@ angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 		$sails.prototype.destroy = function(object) { return this.crud('delete', object); };
 		$sails.prototype.retrieve = function(object) { return this.crud('get', object); };
 		return $sails;
-	};
+	}
 ]);
