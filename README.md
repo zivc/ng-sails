@@ -23,11 +23,11 @@ If you wish to filter, paginate or search you can access `$scope.user.params` to
 
 You can now also use full CRUD methods on the model after it has been bound
 
-    $scope.model.create({name:"Ash"});
+    $scope.user.create({name:"Ash"});
 
 The other CRUD methods require an ID to be the first parameter
 
-	$scope.model.update(1, {name:"Ash"});
+	$scope.user.update(1, {name:"Ash"});
 
 The methods are `create`, `retrieve`, `update` and `destroy`.
 
