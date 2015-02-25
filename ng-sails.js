@@ -97,9 +97,9 @@ angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 			return q.promise;
 		};
 		$sails.prototype.create = function(object) { return this.crud('post', object); };
-		$sails.prototype.update = function(object) { return this.crud('put', object); };
-		$sails.prototype.destroy = function(object) { return this.crud('delete', object); };
-		$sails.prototype.retrieve = function(object) { return this.crud('get', object); };
+		$sails.prototype.update = function(id, object) { return this.crud('put', object, id); };
+		$sails.prototype.destroy = function(id, object) { return this.crud('delete', object, id); };
+		$sails.prototype.retrieve = function(id, object) { return this.crud('get', object, id); };
 		return $sails;
 	}
 ]);
