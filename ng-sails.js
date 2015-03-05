@@ -1,32 +1,39 @@
 angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 	function($q,$rootScope) {
+
 		var $sails = function(sailsmodel, angularmodel, $scope) {
-			if (!$scope) {
-				$scope = angularmodel;
-				angularmodel = sailsmodel;
-			}
-			if (typeof $scope[angularmodel] == "undefined") {
-				var init = function(sailsmodel, angularmodel, $scope) {
-					$scope[angularmodel] = [];
-					$scope[angularmodel] = new $sails(sailsmodel,angularmodel,$scope);
+			this.length = 0;
+			(function(sailsmodel, angularmodel, $scope) {
+				if (!sailsmodel && !angularmodel) return;
+				if (!$scope) {
+					$scope = angularmodel;
+					angularmodel = sailsmodel;
 				}
-				return init(sailsmodel, angularmodel, $scope);
-			}
-			this.api = sailsmodel;
-			this.model = angularmodel;
-			this.hooks = {
-				onfetch:[],
-				onsubscribe:[]
-			};
-			this.params = {
-				limit:30,
-				skip:0,
-				sort:'id desc'
-			};
-			this.scope = $scope;
-			this.fetch(true);
-			return this;
-		};
+				this.api = sailsmodel;
+				this.model = angularmodel;
+				this.hooks = {
+					onfetch:[],
+					onsubscribe:[]
+				};
+				this.params = {
+					limit:30,
+					skip:0,
+					sort:'id desc'
+				};
+				this.scope = $scope;
+				this.fetch(true);
+			}.bind(this))(sailsmodel, angularmodel, $scope);
+		}
+
+		$sails.prototype = [];
+		if (new $sails().length !== 0) {
+			$sails.prototype = {};
+			["join","pop","push","reverse","shift","slice","sort","splice","unshift","concat"].forEach(function(m) {
+				$sails.prototype[m] = Array.prototype[m];
+			});
+		}
+		$sails.prototype.toString = Object.prototype.toString;
+		$sails.prototype.concat = function () { return Array.prototype.concat.apply(this.slice(), arguments);};
 		$sails.prototype.responseHandler = function(response) {
 			this.scope[this.model] = this.scope[this.model] || [];
 			switch(response.verb) {
@@ -55,8 +62,10 @@ angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 			return this;
 		};
 		$sails.prototype.fetch = function(subscribe) {
+			if (!this.api) return;
 			io.socket.request((this.api.substr(0,1)!=="/"?'/':'')+this.api, this.params, function(response) {
-				this.scope[this.model] = response;
+				this.scope[this.model].length = 0;
+				Array.prototype.push.apply(this.scope[this.model], response);
 				this.scope.$apply();
 				if (subscribe) this.subscribe();
 				this.hooks.onfetch.forEach(function(hook) { hook(); });
@@ -69,6 +78,7 @@ angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 			return this;
 		}
 		$sails.prototype.where = function(where) {
+			if (!this.params) this.params = this.defaultParams();
 			this.params.where = where?where:{};
 			this.fetch(false);
 			return this;
@@ -101,5 +111,6 @@ angular.module('ngSails', []).factory('$sails', ['$q','$rootScope',
 		$sails.prototype.destroy = function(id, object) { return this.crud('delete', object, id); };
 		$sails.prototype.retrieve = function(id, object) { return this.crud('get', object, id); };
 		return $sails;
+
 	}
 ]);
