@@ -13,7 +13,7 @@ In your controller, require `$sails` and then bind the simplest method of bindin
 
     $scope.user = new $sails('user', $scope);
 
-`$scope.user` will now be populated with an ng-sails object. The object prototype contains CRUD methods. The `$scope.user.model` object contains your current data and will update in real time when things change on the server.
+`$scope.user` will now be populated with an ng-sails array-like object. The object prototype contains CRUD methods. The `$scope.user` array contains your current data and will update in real time when things change on the server.
 
 If you need to assign your sails model to an angular model with a different name, or perhaps you're fetching a method from within your controller - then you'll need to specify three parameters to `$sails`.
 
